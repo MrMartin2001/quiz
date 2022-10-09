@@ -1,0 +1,9 @@
+*
+!*/
+!/.gitignore
+!/README.md
+!/logo.ico
+!*.html
+!layout/css/*.css
+!layout/js/*.js
+!quizzes/*.json

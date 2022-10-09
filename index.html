@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="de">
+	<head>
+		<meta charset="UTF-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1">
+		<script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.0.0/crypto-js.min.js"></script>
+		<script src="/quiz/layout/js/language.js"></script>
+		<script>
+		__tr(
+			'de', '<title>Zeit für ein Quiz</title>',
+			'en', '<title>It\'s quiz time</title>',
+			'es', '<title>Hora de un concurso</title>',
+			'fr', '<title>C\'est l\'heure du quiz</title>',
+			'it', '<title>È l\'ora del quiz</title>'
+		)
+		</script>
+		<link rel="icon" type="image/x-icon" href="/quiz/logo.ico">
+		<link rel="shortcut icon" type="image/x-icon" href="/quiz/logo.ico">
+		<link rel="stylesheet" href="/quiz/layout/css/style.css">
+	</head>
+	<body>
+		<section>
+			<div class="title">
+				<h1 id="title"></h1>
+				<p id="subtitle"></p>
+				<hr>
+				<div class="link"><a id="url"></a></div>
+				<!--<script>generateLanguages('de', 'en');</script>-->
+			</div>
+			<form onsubmit="return false;">
+				<p id="description"></p>
+			</form>
+		</section>
+		
+		<script>
+			async function main() {
+				const urlParams = new URLSearchParams(location.search);
+				/*global*/ QID = urlParams.get('q');
+				if (QID === null) { showError(); return; }
+				
+				/*global*/ QUIZ = await fetch(`quizzes/${QID}.json`)
+					.then(res => res.json())
+					.catch(err => { showError(); return undefined; });
+				if (QUIZ !== undefined) loadQuiz();
+			}
+			main();
+			
+			function kwargs2array(kwargs) {
+				return Object.entries(kwargs).flat();
+			}
+			
+			async function showError() {
+				var div = document.querySelector('div.title');
+				div.innerHTML += _generateLanguages('de', 'en', 'es', 'fr', 'it');
+				document.querySelector('#title').innerText = _tr(
+					'de', 'Fehler',
+					'en', 'Error',
+					'es', 'Error',
+					'fr', 'Erreur',
+					'it', 'Errore'
+				);
+				document.querySelector('#description').innerText = _tr(
+					'de', 'Das gewünschte Quiz ist leider nicht verfügbar.',
+					'en', 'Unfortunately, the quiz you are looking for is not available.',
+					'es', 'Lamentablemente, el concurso que busca no está disponible.',
+					'fr', 'Malheureusement, le quiz que vous recherchez n\'est pas disponible.',
+					'it', 'Purtroppo il quiz che state cercando non è disponibile.'
+				);
+			}
+			
+			async function loadQuiz() {
+				// languages
+				var languages = Object.keys(QUIZ['title']);
+				if (!languages.includes(getLanguage())) setLanguage(languages[0]);
+				var div = document.querySelector('div.title');
+				div.innerHTML += _generateLanguages(...languages);
+				
+				// title, subtitle, url
+				var title = _tr(...kwargs2array(QUIZ['title']));
+				document.title = title + ' – ' + _tr(
+					'de', 'Quiz',
+					'en', 'Quiz',
+					'es', 'Concurso',
+					'fr', 'Quiz',
+					'it', 'Quiz'
+				);
+				document.querySelector('#title').innerText = title;
+				if ('subtitle' in QUIZ) document.querySelector('#subtitle').innerText = _tr(...kwargs2array(QUIZ['subtitle']));
+				if ('url' in QUIZ) {
+					document.querySelector('#url').href = QUIZ['url'];
+					document.querySelector('#url').innerText = QUIZ['link'] || QUIZ['url'];
+				}
+				
+				// description
+				if ('description' in QUIZ) document.querySelector('#description').innerText = _tr(...kwargs2array(QUIZ['description']));
+				
+				// questions
+				const form = document.querySelector('form');
+				for (let i = 0; i < QUIZ['questions'].length; i++) {
+					var question = QUIZ['questions'][i];
+					
+					// header
+					var h1 = document.createElement('h1');
+					h1.innerText = _tr(
+						'de', `Frage ${i+1}`,
+						'en', `Question ${i+1}`,
+						'es', `Cuestionario ${i+1}`,
+						'fr', `Question ${i+1}`,
+						'it', `Domanda ${i+1}`
+					);
+					form.appendChild(h1);
+					
+					// description
+					if ('d' in question) {
+						var p = document.createElement('p');
+						p.innerText = _tr(...kwargs2array(question['d']));
+						form.appendChild(p);
+					}
+					
+					// question
+					var p = document.createElement('p');
+					var b = document.createElement('b');
+					b.innerText = _tr(...kwargs2array(question['q']));
+					p.appendChild(b);
+					form.appendChild(p);
+					
+					// input
+					var input = document.createElement('input');
+					/*input.required = true;*/
+					input.id = `q${QID}-a${i}`;
+					input.type = question['t'] || 'text';
+					form.appendChild(input);
+				}
+				
+				// button
+				var p = document.createElement('p');
+				var button = document.createElement('button');
+				button.type = 'submit';
+				button.innerText = _tr(
+					'de', 'Antworten prüfen',
+					'en', 'Check answers',
+					'es', 'Comprobar las respuestas',
+					'fr', 'Vérifiez les réponses',
+					'it', 'Controllare le risposte'
+				);
+				p.appendChild(button);
+				form.appendChild(p);
+				
+				// form
+				form.onsubmit = () => { checkAnswers(); return false; };
+			}
+			
+			async function checkAnswers() {
+				const section = document.querySelector('section');
+				const form = document.querySelector('form');
+				const button = document.querySelector('button[type=submit]');
+				
+				// get/create resolution
+				var resolution = document.querySelector('#resolution');
+				if (resolution === null) {
+					resolution = document.createElement('div');
+					resolution.id = 'resolution';
+					section.appendChild(resolution);
+				} else {
+					resolution.innerHTML = '';
+				}
+				
+				// disable form elements
+				var formElements = document.querySelectorAll('input:not([disabled]), select, textarea, button');
+				formElements.forEach(elem => elem.disabled = true);
+				
+				// remove children after button
+				var flag = false;
+				form.childNodes.forEach(child => {
+					if (flag) form.removeChild(child);
+					if (child === button.parentElement) flag = true;
+				});
+				
+				// add progress bar and run
+				var progressBar = document.createElement('div');
+				progressBar.classList.add('progress-bar');
+				var bar = document.createElement('div');
+				bar.classList.add('bar');
+				progressBar.appendChild(bar);
+				resolution.appendChild(progressBar);
+				
+				var t = Math.random() * 1000 + 1200;
+				for (var p = 1; p <= 100; p++) {
+					bar.style.width = `${p}%`;
+					await new Promise(r => setTimeout(r, t / 100));
+				}
+				
+				// create passphrase
+				var passphrase = QUIZ['questions'].map((question, i) => {
+					var s = document.querySelector(`#q${QID}-a${i}`).value;
+					var r = question['r'] || '.';
+					if (r != '.') s = s.replace(new RegExp(`[^${r}]*`, 'mg'), '');
+					if (!question['s']) s = s.toLowerCase();
+					return s;
+				}).join(';;');
+				
+				// check answers
+				var salt = CryptoJS.enc.Base64.parse(QUIZ['salt']);
+				var iv = CryptoJS.enc.Base64.parse(QUIZ['iv']);
+				var key = CryptoJS.PBKDF2(passphrase, salt, {keySize: 512/32, iterations: 1000});
+				
+				var solution = null;
+				for (var ciphertext of QUIZ['ciphertexts']) {
+					try {
+						var decrypted = CryptoJS.AES.decrypt(ciphertext, key, {iv: iv});
+						decrypted = CryptoJS.enc.Utf8.stringify(decrypted);
+						if (decrypted.startsWith('True;;')) {
+							solution = decrypted.substring(6);
+							break;
+						}
+					} catch (ignored) {}
+				}
+				
+				// show result
+				bar.style.width = '100%';
+				if (solution != null) {
+					bar.innerText = solution;
+					progressBar.classList.add('correct');
+					bar.onclick = () => {
+						var range = document.createRange();
+						range.selectNode(bar);
+						window.getSelection().removeAllRanges();
+						window.getSelection().addRange(range);
+						document.execCommand('copy');
+					}
+				}
+				else {
+					bar.innerText = _tr(
+						'de', 'Diese Antworten sind falsch.',
+						'en', 'These answers are wrong.',
+						'es', 'Estas respuestas son incorrectas.',
+						'fr', 'Ces réponses sont fausses.',
+						'it', 'Queste risposte sono sbagliate.'
+					);
+					progressBar.classList.add('incorrect');
+				}
+				bar.classList.add('anti-bar');
+				
+				// enable form elements
+				formElements.forEach(elem => elem.disabled = false);
+			}
+		</script>
+	</body>
+</html>

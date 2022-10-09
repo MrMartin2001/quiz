@@ -1,0 +1,46 @@
+{
+	"title": {
+		"de": "Beispiel-Quiz",
+		"en": "Demo Quiz"
+	},
+	"subtitle": {
+		"de": "Zum Testen",
+		"en": "For Testing"
+	},
+	"url": "https://github.com/MrMartin2001",
+	"link": "github/MrMartin2001",
+	"description": {
+		"de": "Das ist ein kleines Quiz zum Testen des Quiz Tools.",
+		"en": "This is a small quiz to test the quiz tool."
+	},
+	"questions": [
+		{
+			"d": {
+				"de": "Als erstes kommt eine Frage zum Alphabet.",
+				"en": "First, a question about the alphabet."
+			},
+			"q": {
+				"de": "Wie lautet der zweite Buchstabe des deutschen Alphabets?",
+				"en": "What is the second letter of the English alphabet?"
+			},
+			"r": "\\w"
+		},
+		{
+			"d": {
+				"de": "Als nächstes eine Frage der Mathematik.",
+				"en": "Next, a question from the field of mathematics."
+			},
+			"q": {
+				"de": "Was ist 2 plus 2?",
+				"en": "What is 2 plus 2?"
+			},
+			"t": "number",
+			"r": "\\d"
+		}
+	],
+	"salt": "IJO0yiGq6w6HM04DeHl1XJnpXZMDJFrEZRbKd/bntqM=",
+	"iv": "QrVhIBQOqcw2OwCj0oXndfYU1V7x0iQdLMRxRvJwu3U=",
+	"ciphertexts": [
+		"WBBIV1ZIWWim8IjWGaGcBI5hF07uTOnaUMa6GunPtKQ="
+	]
+}

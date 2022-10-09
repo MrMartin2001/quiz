@@ -1,0 +1,80 @@
+/* === default colors === */
+:root {
+	--text: #191718; /* on background */
+	--text-accent: var(--bar-correct-text); /* on accent */
+	--text-light: #0a0a0a; /* on accent-light */
+	--text-disabled: #808080; /* with background-gray-border-disabled */
+	
+	--background: var(--body-background);
+	--background-gray: #f2f2f2;
+	--background-gray-border: #b0b0b0;
+	--background-gray-border-disabled: #dbdbdb;
+	--background-darkgray: #cccccc;
+	
+	--accent: #e59300;
+	--accent-light: #ffbc25;
+	
+	--body-background: #fbfbfb;
+	--body-background-accent: #eaeaea;
+	
+	--text-link: var(--accent);
+	--text-mark: var(--text);
+	--text-mark-background: #fbeb04;
+	
+	--bar-incorrect: #cd3f18;
+	--bar-incorrect-text: var(--background);
+	--bar-correct: #139a21;
+	--bar-correct-text: var(--background);
+}
+code {
+	--json-key: #8000ff;
+	--json-string: #800000;
+	--json-number: #ff0000;
+	--json-operator: #18af8a;
+}
+
+/* === dark theme === */
+@media (prefers-color-scheme: dark) {
+	:root {
+		--text: #b0b8c0;
+		--text-accent: #222222;
+		--text-light: #808080;
+		--text-disabled: #666666;
+		
+		--accent: #f3d849;
+		--accent-light: var(--accent);
+		
+		--background: #101820;
+		--background-border: #2c4258;
+		--background-gray: #555555;
+		--background-gray-border: #444444;
+		--background-gray-border-disabled: var(--background-gray-border);
+		--background-darkgray: #333333;
+		
+		--body-background: #05080a;
+		--body-background-accent: #141414;
+		
+		--text-link: var(--accent);
+		--text-mark: #444444;
+		--text-mark-background: #fdf586;
+		
+		--bar-incorrect: #a32a14;
+		--bar-incorrect-text: #eaeaea;
+		--bar-correct: #186d20;
+		--bar-correct-text: var(--bar-incorrect-text);
+	}
+	code {
+		--json-key: #eeeebb;
+		--json-string: #f04060;
+		--json-number: #ff8800;
+		--json-operator: #66ccff;
+	}
+	
+	img, svg, a[href^='data:image'] {
+		opacity: 0.5;
+		transition: opacity .2s ease-in-out;
+	}
+	img:hover, svg:hover, a[href^='data:image']:hover {
+		opacity: 1;
+	}
+}

@@ -1,0 +1,69 @@
+/* === FORMAT ====
+ * full page:
+ * 	<html>
+ * 		<head>...</head>
+ * 		<body>
+ * 			<section>
+ *              <div class="title">
+ *					...
+ *					<hr>
+ *					<div class="link"><a>...</a></div>
+ *                  <div class="language">...</div>
+ *              </div>
+ * 			</section>
+ * 		</body>
+ * 	</html>
+ */
+
+* {
+	box-sizing: border-box;
+}
+
+
+/* ============ */
+/* === BODY === */
+/* ============ */
+
+body {
+	background: linear-gradient(
+		var(--body-background),
+		var(--body-background-accent)
+	);
+	background-attachment: fixed !important;
+	padding: 0 0 50px 0;
+	margin: 0 12px;
+}
+
+
+/* =============== */
+/* === SECTION === */
+/* =============== */
+
+section {
+	display: block;
+	max-width: 650px;
+	padding: 40px 0;
+	margin: 0 auto;
+}
+
+div.title {
+	margin-bottom: 70px;
+}
+div.title hr { margin: 8px 0; }
+div.title div.link { float: left; }
+div.title div.language { float: right; }
+div.title div.language a { padding: 0 2px; }
+
+div.title hr {
+	border: none;
+	border-top: 1px solid;
+	border-bottom: 1px solid;
+	height: 3px;
+	margin: 0.25em 0;
+}
+
+hr {
+	border: none;
+	border-top: 1px solid;
+	margin: 2em 0;
+}

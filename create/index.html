@@ -1,0 +1,846 @@
+<!DOCTYPE html>
+<html lang="de">
+	<head>
+		<meta charset="UTF-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1">
+		<script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.0.0/crypto-js.min.js"></script>
+		<script src="/quiz/layout/js/language.js"></script>
+		<script>__tr('en', '<title>It\'s quiz time</title>', 'de', '<title>Zeit für ein Quiz</title>')</script>
+		<link rel="icon" type="image/x-icon" href="/quiz/logo.ico">
+		<link rel="shortcut icon" type="image/x-icon" href="/quiz/logo.ico">
+		<link rel="stylesheet" href="/quiz/layout/css/style.css">
+		<link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
+		<style>
+			.vertical {
+				display: flex;
+				margin: 0.3em 0;
+			}
+			.vertical * { margin: 0 0.2em; height: 100%; }
+			.vertical *:first-child { margin-left: 0; }
+			.vertical *:last-child { margin-right: 0; }
+			
+			select { width: auto; }
+			
+			h2 * { font-size: inherit; line-height: inherit; }
+			
+			table {
+				display: inline-block;
+				background-color: inherit;
+				margin: 0;
+				border-collapse: collapse;
+				border-radius: 0;
+				overflow: auto;
+				width: 100%;
+			}
+			table { margin-left: -0.5em; margin-right: -0.3em; }
+			table td { padding: 0.15em 0.5em; }
+			
+			code, blockquote { max-height: 23.5em !important; }
+			blockquote::before { content: ''; }
+			blockquote::after { content: ''; }
+			code.incorrect:not(.inline), blockquote.incorrect { border-left-color: var(--bar-incorrect); }
+			code.correct:not(.inline), blockquote.correct { border-left-color: var(--bar-correct); }
+			
+			.big-button {
+				width: 100%;
+				font-size: 1.2em;
+				min-height: 1.6em;
+				
+				border: none;
+				border-radius: 1.6em;
+				
+				background-color: var(--accent);
+				color: var(--text-accent) !important;
+			}
+			.big-button:not(:hover) { background-color: var(--accent) !important; }
+			.big-button:hover, .big-button:active:not(:hover) { background-color: var(--accent-light) !important; }
+			.big-button:active:hover { background-color: var(--bar-correct) !important; }
+			.big-button .material-icons {
+				vertical-align: middle;
+				padding: 0 0.3em;
+				font-size: 1.1em;
+				color: var(--text-accent);
+			}
+		</style>
+	</head>
+	<body>
+		<section>
+			<div class="title">
+				<h1><script>__tr('en', 'Create new quiz', 'de', 'Neues Quiz erstellen')</script></h1>
+				<hr>
+				<div class="link"><a></a></div>
+				<script>generateLanguages('de', 'en');</script>
+			</div>
+			<form onsubmit="return false;">
+			</form>
+		</section>
+		
+		<script>
+			
+			//////////
+			// MAIN //
+			//////////
+			
+			const LANGUAGES = {'de': '🇩🇪', 'en': '🇬🇧', 'es': '🇪🇸', 'fr': '🇫🇷', 'it': '🇮🇹'};
+			const TYPES = ['text', 'number', 'time'];
+			
+			async function main() {
+				const urlParams = new URLSearchParams(location.search);
+				/*global*/ QID = urlParams.get('q');
+				/*global*/ form = document.querySelector('form');
+				
+				/*global*/ QUIZ = await fetch(`../quizzes/${QID}.json`)
+					.then(res => res.json())
+					.catch(err => { return new Object(); });
+				
+				/*global*/ pointer = null;
+				
+				
+				// Basic Information //
+				
+				addElement('h1', _tr('en', 'Basic Information', 'de', 'Grundlegende Informationen'));
+				
+				// link
+				var link = document.querySelector('div.link a');
+				link.href = `/quiz?q=${QID}`;
+				link.innerText = `${window.location.origin}/quiz?q=${QID}`;
+				
+				// id
+				addElement('h2', _tr('en', 'Quiz ID', 'de', 'Quiz ID'));
+				addElement('p', _tr('en', 'Enter a quiz ID or generate a new one.', 'de', 'Eine Quiz ID eingeben oder eine neue generieren.'));
+				
+				var div = addDiv();
+				var input = addInput('text', 'quizId', _tr('en', 'Enter quiz ID...', 'de', 'Quiz ID eingeben...'), div);
+				input.onblur = evt => document.location = `?q=${evt.target.value}`;
+				var button = addElement('button', _tr('en', 'random', 'de', 'zufällig'), div);
+				button.onclick = () => {
+					var qid = Array(7).join().split(',')
+						.map(() => '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'.charAt(Math.floor(Math.random() * 64)))
+						.join('');
+					document.location = `?q=${qid}`;
+				};
+				if (QID != null) input.value = QID;
+				else button.click();
+				
+				// title
+				addElement('h2', _tr('en', 'Title', 'de', 'Titel'));
+				addElement('p', _tr('en', 'Enter the title of the quiz, shown in the header.', 'de', 'Den Titel des Quiz eingeben, der im Header gezeigt wird.'));
+				addLanguageRows('text', 'title', _tr('en', 'Enter title...', 'de', 'Titel eingeben...'));
+				
+				// subtitle
+				addElement('h2', _tr('en', 'Subtitle', 'de', 'Untertitel'));
+				addElement('p', _tr('en', 'Enter the subtitle of the quiz, shown in the header, below the title. (optional)', 'de', 'Den Untertitel des Quiz eingeben, der im Header unterhalb des Titel gezeigt wird. (optional)'));
+				addLanguageRows('text', 'subtitle', _tr('en', 'Enter subtitle...', 'de', 'Untertitel eingeben...'));
+				
+				// url
+				addElement('h2', _tr('en', 'URL', 'de', 'URL'));
+				addElement('p', _tr('en', 'Enter the url to a website, that is linked to in the header. (optional)', 'de', 'Die URL zu einer Website eingeben, die im Header verlinkt wird. (optional)'));
+				addEntry('text', 'url', 'https://www.example.com/fun/');
+				
+				// link
+				addElement('h2', _tr('en', 'Link', 'de', 'Link'));
+				addElement('p', _tr('en', 'Enter a text for the URL, that is shown instead of the URL. (optional)', 'de', 'Einen Text für die URL eingeben, der anstelle der URL angezeigt wird. (optional)'));
+				addEntry('text', 'link', 'www.example.com');
+				
+				// description
+				addElement('h2', _tr('en', 'Description', 'de', 'Beschreibung'));
+				addElement('p', _tr('en', 'Enter a description for the quiz, shown in italics after the header. (optional)', 'de', 'Eine Beschreibung für das Quiz eingeben, die nach dem Header kursiv angezeigt wird. (optional)'));
+				addLanguageRows('textarea', 'description', _tr('en', 'Enter description...', 'de', 'Beschreibung eingeben...'));
+				
+				
+				// Questions //
+				
+				function addQuestion(question, i, parent) {
+					addElement('hr', '');
+					addElement('h1', _tr('en', `Question ${i+1}`, 'de', `Frage ${i+1}`));
+					
+					// description
+					addElement('h2', _tr('en', 'Description', 'de', 'Beschreibung'));
+					addLanguageRows('textarea', `questions_${i}_d`, _tr('en', 'Enter description...', 'de', 'Beschreibung eingeben...'));
+					
+					// question
+					addElement('h2', _tr('en', 'Question', 'de', 'Frage'));
+					addLanguageRows('text', `questions_${i}_q`, _tr('en', 'Enter question...', 'de', 'Frage eingeben...'));
+					
+					// processing (type, regex, sensitivity)
+					addElement('h2', _tr('en', 'Processing', 'de', 'Verarbeitung'));
+					var table = addElement('table', null);
+					var td = () => addElement('td', null, tr);
+					
+					var tr = addElement('tr', null, table);
+					addElement('label', _tr('en', 'Type', 'de', 'Typ'), td());
+					var type = addSelect(`questions_${i}_t`, td(), TYPES);
+					type.value = getPart(`questions_${i}_t`) || 'text';
+					type.onchange = () => {
+						document.querySelector(`#questions_${i}_a`).remove();
+						pointer = document.querySelector(`#questions_${i}-h2`);
+						addAnswerRows(type.value, `questions_${i}_a`, _tr('en', 'Enter answer...', 'de', 'Antwort eingeben...'));
+					};
+					
+					var tr = addElement('tr', null, table);
+					addElement('label', _tr('en', 'Regex', 'de', 'Regex'), td());
+					var regex = addInput('text', `questions_${i}_r`, _tr('en', 'Enter regex...', 'de', 'Regex eingeben...'), td());
+					regex.value = getPart(`questions_${i}_r`) || '\\w';
+					regex.onchange = () => updatePassphrase(`questions_${i}_a`);
+					regex.oninput = () => updatePassphrase(`questions_${i}_a`);
+					
+					var tr = addElement('tr', null, table);
+					addElement('label', _tr('en', 'Case sensitive', 'de', 'Groß-/Kleinschreibung beachten'), td());
+					var sensitivity = addInput('checkbox', `questions_${i}_s`, null, td());
+					sensitivity.checked = getPart(`questions_${i}_s`) || false;
+					sensitivity.onchange = () => updatePassphrase(`questions_${i}_a`);
+					
+					// answers
+					var h2 = addElement('h2', _tr('en', 'Answers', 'de', 'Antworten'));
+					h2.id = `questions_${i}-h2`;
+					addAnswerRows(type.value, `questions_${i}_a`, _tr('en', 'Enter answer...', 'de', 'Antwort eingeben...'));
+				}
+				
+				Object.entries(QUIZ['questions'] || new Object()).forEach((question, i) => addQuestion(question, i));
+				if (!QUIZ['questions']) addQuestion(new Object(), 0);
+				
+				
+				// Solution //
+				
+				addElement('hr', '');
+				addElement('h1', _tr('en', 'Solution', 'de', 'Lösungswort'));
+				addElement('p', _tr('en', 'Enter the solution that is revealed once the quiz is answered correctly.', 'de', 'Das Lösungswort eingeben, das angezeigt wird, wenn das Quiz korrekt beantwortet wird.'));
+				addEntry('text', 'solution', _tr('en', 'Enter solution...', 'de', 'Lösungswort eingeben...'));
+				
+				
+				// Buttons //
+				
+				var hr = addElement('hr', '');
+				hr.id = 'end';
+				var p = addElement('p', '');
+				var div = addDiv(p);
+				
+				// add question
+				var bAddQuestion = addElement('button', _tr('en', 'Add question', 'de', 'Frage hinzufügen'), div);
+				bAddQuestion.onclick = () => {
+					var i = 0;
+					while (true) {
+						if (document.querySelector(`#questions_${i}_a`) === null) break;
+						i++;
+					}
+					pointer = document.querySelector(`#questions_${i-1}_a`);
+					addQuestion(new Object(), i);
+					pointer = null;
+					return false;
+				};
+				
+				// submit
+				var button = addElement('button', _tr('en', 'Generate quiz', 'de', 'Quiz generieren'), div);
+				button.id = 'submit';
+				button.onclick = () => { generateQuiz(); return false; };
+			}
+			main();
+			
+			
+			//////////////
+			// GENERATE //
+			//////////////
+			
+			async function generateQuiz() {
+				
+				// Preparation //
+				
+				const section = document.querySelector('section');
+				const form = document.querySelector('form');
+				const button = document.querySelector('button#submit');
+				
+				// get/create resolution
+				var resolution = document.querySelector('#resolution');
+				if (resolution === null) {
+					resolution = document.createElement('div');
+					resolution.id = 'resolution';
+					section.appendChild(resolution);
+				} else {
+					resolution.innerHTML = '';
+				}
+				
+				// disable form elements
+				var formElements = document.querySelectorAll('input:not([disabled]), select, textarea, button');
+				formElements.forEach(elem => elem.disabled = true);
+				
+				// remove children after button
+				var flag = false;
+				form.childNodes.forEach(child => {
+					if (flag) form.removeChild(child);
+					if (child === button.parentElement) flag = true;
+				});
+				
+				
+				// Check and Generate //
+				
+				var errors = new Array();
+				var json = new Object();
+				var details = new Object();
+				var languages = new Object();
+				
+				function escape(s) { return s.replace(/[\\"]/g, '\\$&'); }
+				function part2str(part) {
+					if (!part.includes('_')) return part;
+					var h = part.split('_');
+					var s = '';
+					if (h[0] == 'questions') s += _tr('en', 'question', 'de', 'Frage'); else s += h[0];
+					if (h.length >= 1 && /^\d+$/.test(h[1])) s += ' ' + (parseInt(h[1])+1); else s += ' ' + h[1];
+					if (h.length >= 2) {
+						if (h[2] == 'd') s = _tr('en', 'description of ', 'de', 'Beschreibung von ') + s;
+						else if (h[2] == 'q') s = _tr('en', 'question from ', 'de', 'Frage von ') + s;
+						else if (h[2] == 't') s = _tr('en', 'type of ', 'de', 'Typ von ') + s;
+						else if (h[2] == 'r') s = _tr('en', 'regex of ', 'de', 'Regex von ') + s;
+						else if (h[2] == 's') s = _tr('en', 'sensitivity of ', 'de', 'Groß-/Kleinschreibung von ') + s;
+						else if (h[2] == 'a') s = _tr('en', 'answer to ', 'de', 'Antwort auf ') + s;
+						else s += ' ' + h[2];
+					}
+					return s;
+				}
+				function collectLanguageRows(part) {
+					var res = new Object();
+					for (let i = 0; true; i++) {
+						var select = document.querySelector(`#${part}-lang-${i}`);
+						if (select === null) break;
+						var input = document.querySelector(`#${part}-${i}`);
+						if (input.value.length == 0) continue;
+						if (!(select.value in LANGUAGES))
+							errors.push(_tr(
+								'en', `Error: invalid language for ${part2str(part)}`,
+								'de', `Fehler: Ungültige Sprache bei ${part2str(part)}`
+							));
+						if (select.value in res)
+							errors.push(_tr(
+								'en', `Error: Duplicate entry for ${part2str(part)}`,
+								'de', `Fehler: Doppelter Eintrag bei ${part2str(part)}`,
+							));
+						res[select.value] = input.value;
+					}
+					languages[part] = Object.keys(res);
+					return res;
+				}
+				function collectAnswerRows(part) {
+					var res = new Array();
+					for (let i = 0; true; i++) {
+						var input = document.querySelector(`#${part}-${i}`);
+						if (input === null) return res;
+						if (input.value.length == 0) continue;
+						res.push(input.value);
+					}
+				}
+				function collectEntry(part) {
+					return document.querySelector(`#${part}`).value;
+				}
+				function addLangTextEntries(langText, ...keys) {
+					var obj = json;
+					keys.splice(0, keys.length-1).forEach(k => obj = obj[k]);
+					obj[keys[keys.length-1]] = Object.keys(langText).sort().reduce((o, k) => { o[k] = langText[k]; return o; }, {});
+				}
+				
+				
+				// Basic Information //
+				
+				details['q'] = QID;
+				
+				// title
+				var title = collectLanguageRows('title');
+				if (Object.entries(title).length == 0) errors.push(_tr('en', 'Missing: title', 'de', 'Fehlt: Titel'));
+				addLangTextEntries(title, 'title');
+				details['title'] = title;
+				
+				// subtitle
+				var subtitle = collectLanguageRows('subtitle');
+				if (Object.entries(subtitle).length > 0) {
+					addLangTextEntries(subtitle, 'subtitle');
+					details['subtitle'] = subtitle;
+				}
+				
+				// url
+				var url = collectEntry('url');
+				if (url.length > 0) {
+					json['url'] = url;
+					details['url'] = url;
+				}
+				
+				// link
+				var link = collectEntry('link');
+				if (link.length > 0) {
+					json['link'] = link;
+					details['link'] = link;
+				}
+				
+				// description
+				var description = collectLanguageRows('description');
+				if (Object.entries(description).length > 0) {
+					addLangTextEntries(description, 'description');
+					details['description'] = description;
+				}
+				
+				
+				// Questions //
+				
+				json['questions'] = new Array();
+				details['questions'] = new Array();
+				var answers = new Array();
+				for (let i = 0; true; i++) {
+					if (document.querySelector(`#questions_${i}-h2`) === null) break;
+					json['questions'].push(new Object());
+					var question = new Object();
+					
+					// description
+					var d = collectLanguageRows(`questions_${i}_d`);
+					if (Object.entries(d).length > 0) {
+						addLangTextEntries(d, 'questions', i, 'd');
+						question['d'] = d;
+					}
+					
+					// question
+					var q = collectLanguageRows(`questions_${i}_q`);
+					if (Object.entries(q).length == 0)
+						errors.push(_tr('en', 'Missing: ', 'de', 'Fehlt: ') + part2str(`questions_${i}_q`));
+					addLangTextEntries(q, 'questions', i, 'q');
+					question['q'] = q;
+					
+					// type
+					var t = collectEntry(`questions_${i}_t`);
+					if (!TYPES.includes(t))
+						errors.push(_tr('en', 'Invalid value: ', 'de', 'Ungültiger Wert: ') + part2str(`questions_${i}_t`));
+					if (t != 'text') {
+						json['questions'][i]['t'] = t;
+						question['t'] = t;
+					}
+					
+					// regex
+					var r = collectEntry(`questions_${i}_r`);
+					try { new RegExp(r); } catch {
+						errors.push(_tr('en', 'Invalid value: ', 'de', 'Ungültiger Wert: ') + part2str(`questions_${i}_r`));
+					}
+					if (t != '.') {
+						json['questions'][i]['r'] = r;
+						question['r'] = r;
+					}
+					
+					// sensitivity
+					var s = document.querySelector(`#questions_${i}_s`).checked;
+					if (s != false) {
+						json['questions'][i]['s'] = true;
+						question['s'] = s;
+					}
+					
+					// answers
+					var a = collectAnswerRows(`questions_${i}_a`);
+					question['a'] = a;
+					if (Object.entries(a).length == 0)
+						errors.push(_tr('en', 'Missing: ', 'de', 'Fehlt: ') + part2str(`questions_${i}_a`));
+					a = a.map(h => {
+						if (r != '.') h = h.replace(new RegExp(`[^${r}]*`, 'mg'), '');
+						if (!s) h = h.toLowerCase();
+						return h;
+					});
+					answers.push(a);
+					
+					details['questions'].push(question);
+				}
+				
+				
+				// Languages //
+				
+				var allLanguages = [...new Set(Object.values(languages).flat())];
+				Object.entries(languages).forEach(e => {
+					allLanguages.forEach(l => {
+						if (!e[1].includes(l)) errors.push(_tr(
+							'en', `Missing: ${LANGUAGES[l]}-translation for ${part2str(e[0])}`,
+							'de', `Fehlt: ${LANGUAGES[l]}-Übersetzung für ${part2str(e[0])}`
+						));
+					});
+				});
+				
+				
+				// Solution //
+				
+				var solution = collectEntry('solution');
+				if (solution.length == 0) errors.push(_tr('en', 'Missing: solution', 'de', 'Fehlt: Lösungswort'));
+				details['solution'] = solution;
+				
+				
+				// Verify //
+				
+				// add progress bar
+				var progressBar = document.createElement('div');
+				progressBar.classList.add('progress-bar');
+				var bar = document.createElement('div');
+				bar.classList.add('bar');
+				progressBar.appendChild(bar);
+				resolution.appendChild(progressBar);
+				
+				// check errors
+				if (errors.length != 0) {
+					// run progress bar
+					var t = Math.random() * 500 + 300;
+					for (let p = 1; p <= 100; p++) {
+						bar.style.width = `${p}%`;
+						await new Promise(r => setTimeout(r, t / 100));
+					}
+					bar.style.width = '100%';
+					
+					// show result
+					bar.innerText = _tr('en', 'The quiz is erroneous.', 'de', 'Das Quiz ist fehlerhaft.');
+					progressBar.classList.add('incorrect');
+					
+					// quote with errors
+					var quote = document.createElement('blockquote');
+					quote.classList.add('incorrect');
+					quote.innerText = errors.join('\n');
+					resolution.appendChild(quote);
+					
+					// finalize
+					bar.classList.add('anti-bar');
+					
+					// enable form elements
+					formElements.forEach(elem => elem.disabled = false);
+					return;
+				}
+				
+				
+				// Cryptography //
+				
+				// answers
+				function combinations(list, n = 0, res = [], oracle = []) {
+					if (n === list.length) res.push(oracle);
+					else list[n].forEach(item => combinations(list, n+1, res, [...oracle, item]));
+					return res;
+				}
+				var allCombinations = combinations(answers);
+				
+				// run progress bar
+				const t0 = 20;
+				var t = Math.max(Math.random() * 500 + 600 - allCombinations.length * t0, 0) + allCombinations.length * t0;
+				var s = 100 * t0 / t;
+				for (let p = 1; p <= 100 - allCombinations.length * s; p++) {
+					bar.style.width = `${p}%`;
+					await new Promise(r => setTimeout(r, t / 100));
+				}
+				
+				// salt
+				var salt = CryptoJS.lib.WordArray.random(32);
+				json['salt'] = CryptoJS.enc.Base64.stringify(salt);
+				details['salt'] = salt;
+				
+				// iv
+				var iv = CryptoJS.lib.WordArray.random(32);
+				json['iv'] = CryptoJS.enc.Base64.stringify(iv);
+				details['iv'] = iv;
+				
+				// ciphertexts
+				json['ciphertexts'] = new Array();
+				for (let i = 0; i < allCombinations.length; i++) {
+					bar.style.width = `${100 - (allCombinations.length - i - 1) * s}%`;
+					await new Promise(r => setTimeout(r, 1));
+					var passphrase = allCombinations[i].join(';;');
+					var key = CryptoJS.PBKDF2(passphrase, salt, {keySize: 512/32, iterations: 1000});
+					var encrypted = CryptoJS.AES.encrypt(`True;;${solution}`, key, {iv: iv});
+					var ciphertext = CryptoJS.enc.Base64.stringify(encrypted.ciphertext);
+					json['ciphertexts'].push(ciphertext);
+				}
+				bar.style.width = '100%';
+				
+				
+				// Finalize //
+				
+				// show result
+				bar.innerText = _tr('en', 'The quiz was generated successfully.', 'de', 'Das Quiz wurde erfolgreich generiert.');
+				progressBar.classList.add('correct');
+				
+				function createIcon(name) {
+					var icon = document.createElement('span');
+					icon.classList.add('material-icons');
+					icon.innerText = name;
+					return icon;
+				}
+				function ___tr(lang, ...kwargs) {
+					for (let i = 0; i < kwargs.length; i += 2)
+						if (lang == kwargs[i]) return kwargs[i+1];
+					return kwargs[1];
+				}
+				
+				json = JSON.stringify(json, null, '\t');
+				
+				// download button
+				var p = document.createElement('p');
+				var download = document.createElement('button');
+				download.classList.add('big-button');
+				download.appendChild(createIcon('file_download'));
+				download.appendChild(document.createTextNode(_tr('en', 'Download quiz', 'de', 'Quiz herunterladen')));
+				download.appendChild(createIcon('file_download'));
+				download.onclick = () => {
+					var a = document.createElement('a');
+					a.href = 'data:text/json;charset=utf-8,' + encodeURI(json);
+					a.target = '_blank';
+					a.download = `${QID}.json`;
+					a.click();
+					return false;
+				};
+				p.appendChild(download);
+				resolution.appendChild(p);
+				
+				// code with json
+				var code = document.createElement('code');
+				code.classList.add('json');
+				code.classList.add('correct');
+				code.appendChild(document.createTextNode(json));
+				resolution.appendChild(code);
+				highlightAllCodeTags();
+				
+				// copy button
+				var p = document.createElement('p');
+				var copy = document.createElement('button');
+				copy.classList.add('big-button');
+				copy.appendChild(createIcon('content_copy'));
+				copy.appendChild(document.createTextNode(_tr('en', 'Copy information', 'de', 'Informationen kopieren')));
+				copy.appendChild(createIcon('content_copy'));
+				copy.onclick = () => {
+					window.getSelection().removeAllRanges();
+					quote.childNodes.forEach(child => {
+						var range = document.createRange();
+						range.selectNode(child);
+						window.getSelection().addRange(range);
+					});
+					document.execCommand('copy');
+					return false;
+				};
+				p.appendChild(copy);
+				resolution.appendChild(p);
+				
+				// quote with text
+				var quote = document.createElement('blockquote');
+				quote.classList.add('correct');
+				function collectInfo() {
+					var info = new Array();
+					// basic information
+					info.push(`<h3>${_tr('en', 'Information', 'de', 'Informationen')}<\/h3>`);
+					var url = `${window.location.origin}/quiz?q=${QID}`;
+					info.push(_tr('en', 'To the quiz', 'de', 'Zum Quiz') + `: <code class="inline"><a href="${url}">${url}<\/a><\/code>`);
+					info.push(_tr('en', 'Solution', 'de', 'Lösungswort') + `: <code class="inline">${details.solution}<\/code>`);
+					if ('url' in details) {
+						info.push('');
+						info.push(_tr('en', 'URL', 'de', 'URL') + `: <a href="${details.url}">${details.url}<\/a>`);
+						if ('link' in details) info.push(_tr('en', 'Link', 'de', 'Link') + `: ${details.link}`);
+					}
+					info.push('');
+					// languages
+					allLanguages.forEach(lang => {
+						var h3 = details['title'][lang];
+						if ('subtitle' in details) h3 += ' – ' + details['subtitle'][lang];
+						info.push(`<h3>${h3}<\/h3>`);
+						info.push(`<i>${details.description[lang]}<\/i>`);
+						details['questions'].forEach((question, i) => {
+							info.push('<h4>' + ___tr(lang, 'en', `Question ${i+1}`, 'de', `Frage ${i+1}`) + '<\/h4>');
+							if ('d' in question) info.push(question['d'][lang]);
+							info.push(`<b>${question.q[lang]}<\/b>`);
+							info.push('');
+							question['a'].forEach(answer => {
+								info.push(___tr(lang, 'en', 'Answer', 'de', 'Antwort') + `: <code class="inline">${answer}<\/code>`);
+							});
+							info.push(___tr(lang, 'en', 'Note: [...]', 'de', 'Anmerkung: [...]'));
+							info.push('');
+						});
+					});
+					info = info.splice(0, info.length-1);
+					return info;
+				}
+				quote.innerHTML = collectInfo().map(line => line.startsWith('<h') ? line : line + '<br>').join('');
+				resolution.appendChild(quote);
+				
+				// finalize
+				bar.classList.add('anti-bar');
+				
+				// enable form elements
+				formElements.forEach(elem => elem.disabled = false);
+			}
+			
+			
+			////////////
+			// ACTION //
+			////////////
+			
+			// row (multiple language select and input/textarea elements)
+			function addLanguageRows(type, part, placeholder) {
+				var div = document.createElement('div');
+				div.id = part;
+				insert(div);
+				Object.entries(getPart(part) || new Object()).forEach((e, i) => addLanguageRow(type, part, i, placeholder, e[0], e[1]));
+				checkLanguageRow(type, part, placeholder);
+			}
+			function addLanguageRow(type, part, i, placeholder, lang, value) {
+				var parent = document.querySelector(`div#${part}`);
+				var div = addDiv(parent);
+				var options = Object.keys(LANGUAGES).slice(0);
+				for (let j = 0; true; j++) {
+					var select = document.querySelector(`#${part}-lang-${j}`);
+					if (select == null) break;
+					var k = options.indexOf(select.value);
+					if (k != -1) options.splice(k, 1);
+				}
+				var select = addSelect(`${part}-lang-${i}`, div, LANGUAGES);
+				select.value = lang || (options[0] || '');
+				select.onchange = evt => checkLanguageRow(type, part, placeholder);
+				var input = addInput(type, `${part}-${i}`, placeholder, div);
+				input.value = value || '';
+				input.onblur = evt => checkLanguageRow(type, part, placeholder);
+			}
+			function checkLanguageRow(type, part, placeholder) {
+				var i = 0;
+				while (true) {
+					var input = document.querySelector(`#${part}-${i}`);
+					if (input == null) break;
+					if (!input.value) input.parentElement.remove();
+					i++;
+				}
+				var parent = document.querySelector(`div#${part}`);
+				for (i = 0; i < parent.children.length; i++) {
+					var child = parent.children[i];
+					child.children[0].id = `${part}-lang-${i}`;
+					child.children[1].id = `${part}-${i}`;
+				}
+				addLanguageRow(type, part, i, placeholder);
+			}
+			
+			// row (multiple input elements with disabled input elements)
+			function addAnswerRows(type, part, placeholder) {
+				var div = document.createElement('div');
+				div.id = part;
+				insert(div);
+				(getPart(part) || new Array()).forEach((e, i) => addAnswerRow(type, part, i, placeholder, e));
+				checkAnswerRow(type, part, placeholder);
+			}
+			function addAnswerRow(type, part, i, placeholder, value) {
+				var parent = document.querySelector(`div#${part}`);
+				var div = addDiv(parent);
+				var input = addInput(type, `${part}-${i}`, placeholder, div);
+				input.value = value || '';
+				input.onblur = evt => checkAnswerRow(type, part, placeholder);
+				var info = addInput('text', `${part}-${i}-info`, null, div);
+				info.disabled = true;
+				updatePassphrase(part, i);
+				input.onchange = () => updatePassphrase(part, i);
+				input.oninput = () => updatePassphrase(part, i);
+			}
+			function checkAnswerRow(type, part, placeholder) {
+				var i = 0;
+				while (true) {
+					var input = document.querySelector(`#${part}-${i}`);
+					if (input == null) break;
+					if (!input.value) input.parentElement.remove();
+					i++;
+				}
+				var parent = document.querySelector(`div#${part}`);
+				for (i = 0; i < parent.children.length; i++) {
+					var child = parent.children[i];
+					child.children[0].id = `${part}-${i}`;
+					child.children[1].id = `${part}-${i}-info`;
+				}
+				addAnswerRow(type, part, i, placeholder);
+			}
+			function updatePassphrase(part, i) {
+				var base = part.split('_').splice(0, part.split('_').length-1).join('_');
+				if (i === undefined) {
+					i = 0;
+					while (true) {
+						if (document.querySelector(`#${base}_a-${i}`) === null) return;
+						updatePassphrase(part, i);
+						i++;
+					}
+				}
+				var s = document.querySelector(`#${base}_a-${i}`).value;
+				var r = document.querySelector(`#${base}_r`).value || '.';
+				try {
+					if (r != '.') s = s.replace(new RegExp(`[^${r}]*`, 'mg'), '');
+					if (!document.querySelector(`#${base}_s`).checked) s = s.toLowerCase();
+				} catch {
+					s = _tr('en', 'Error: Invalid regex', 'de', 'Fehler: Ungültiger Regex');
+				}
+				document.querySelector(`#${base}_a-${i}-info`).value = s;
+			}
+			
+			// entry (single input element)
+			function addEntry(type, part, placeholder) {
+				var input = addInput(type, part, placeholder);
+				input.value = getPart(part) || '';
+				return input;
+			}
+			
+			
+			////////////
+			// HELPER //
+			////////////
+			
+			function getPart(part) {
+				var q = QUIZ;
+				try {
+					part.split('_').forEach(p => q = q[p]);
+					return q;
+				} catch { return null; }
+			}
+			
+			function insert(elem, parent) {
+				if (parent === undefined || parent === null) {
+					if (pointer === null) form.appendChild(elem);
+					else {
+						form.insertBefore(elem, pointer.nextSibling);
+						pointer = pointer.nextSibling;
+					}
+				} else parent.appendChild(elem);
+			}
+			function addElement(tag, innerText, parent) {
+				var elem = document.createElement(tag);
+				elem.innerText = innerText;
+				insert(elem, parent);
+				return elem;
+			}
+			function addDiv(parent) {
+				var div = document.createElement('div');
+				div.classList.add('vertical');
+				insert(div, parent);
+				return div;
+			}
+			function addInput(type, id, placeholder, parent) {
+				var input;
+				if (type == 'textarea') {
+					input = document.createElement('textarea');
+					input.rows = 2;
+				} else {
+					input = document.createElement('input');
+					input.type = type;
+				}
+				input.id = id;
+				if (placeholder !== null) input.placeholder = placeholder;
+				input.onkeydown = event => event.keyCode != 13;
+				insert(input, parent);
+				return input;
+			}
+			function addSelect(id, parent, options) {
+				var select = document.createElement('select');
+				select.id = id;
+				if (Array.isArray(options)) {
+					options.forEach(value => {
+						var option = document.createElement('option');
+						option.value = value;
+						option.innerText = value;
+						select.appendChild(option);
+					});
+				} else {
+					Object.entries(options).forEach(value => {
+						var option = document.createElement('option');
+						option.value = value[0];
+						option.innerText = value[1];
+						select.appendChild(option);
+					});
+				}
+				
+				insert(select, parent);
+				return select;
+			}
+		</script>
+		
+		<script src="/quiz/layout/js/code.js" async></script>
+	</body>
+</html>

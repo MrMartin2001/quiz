@@ -1,0 +1,206 @@
+@import url("fonts.css");
+@import url("layout.css");
+@import url("colors.css");
+
+
+/* ==================== */
+/* === PROGRESS BAR === */
+/* ==================== */
+
+div.progress-bar {
+	width: 100%;
+	background-color: var(--background-darkgray);
+}
+div.bar {
+	display: flex;
+	position: relative;
+	
+	width: 0;
+	min-height: 1.65em;
+	background-color: var(--accent);
+	
+	font-size: 1.2em;
+	text-align: center;
+	justify-content: center;
+	flex-direction: column;
+}
+
+div.anti-bar {
+	background-color: var(--background-darkgray);
+}
+div.anti-bar::after {
+	content: "";
+	position: absolute;
+	z-index: 1;
+	top: 0;
+	left: 0;
+	right: 0;
+	bottom: 0;
+	
+	background-color: var(--accent);
+	
+	animation-name: anti-progress;
+	animation-duration: 1s;
+	animation-fill-mode: both;
+}
+@keyframes anti-progress {
+	0%, 10% { transform-origin: 0 50%; }
+	20%, 100% { transform-origin: 100% 50%; }
+	20% { transform: scaleX(1); }
+	100% { transform: scaleX(0); }
+}
+
+div.incorrect * {
+	background-color: var(--bar-incorrect);
+	color: var(--bar-incorrect-text);
+}
+div.correct * {
+	background-color: var(--bar-correct);
+	color: var(--bar-correct-text);
+	
+	cursor: pointer;
+}
+
+
+/* ============= */
+/* === INPUT === */
+/* ============= */
+
+input:focus, input:focus:hover, textarea:focus, textarea:focus:hover {
+	outline: none;
+	box-shadow: 0 0 5px var(--accent);
+}
+input[type=text], input[type=number], input[type=date], input[type=time], textarea, select {
+	width: 100%;
+}
+label { margin-right: 0.5em; }
+input + input, textarea + textarea { margin-left: 0.5em; }
+
+/* === Text === */
+input[type=text], input[type=number], input[type=date], input[type=time], textarea {
+	background-color: var(--background);
+	
+	max-width: 100%;
+	padding: 0.15em 0.3em;
+	
+	border: 1px solid var(--background-gray-border);
+}
+input[type=text]:disabled, input[type=number]:disabled, input[type=date]:disabled, input[type=time]:disabled, textarea:disabled {
+	color: var(--text-disabled);
+	border-color: var(--background-gray-border-disabled);
+}
+
+/* === Select === */
+select {
+	background-color: var(--background);
+	
+	max-width: 100%;
+	padding: 0.15em 0.3em;
+	
+	border: 1px solid var(--background-gray-border);
+}
+select:disabled {
+	color: var(--text-disabled);
+	border-color: var(--background-gray-border-disabled);
+}
+
+/* === Checkbox === */
+input[type=radio], input[type=checkbox] {
+	background-color: var(--background);
+
+	margin-left: 0.3em;
+	margin-right: 0.3em;
+}
+input[type=radio] + label, input[type=checkbox] + label { position: relative; bottom: 0.15em; }
+
+/* === Button === */
+button, input[type=submit], input[type=reset], input[type=button] {
+	background-color: var(--background-gray);
+	
+	text-decoration: none;
+	
+	display: inline-block;
+	outline: none;
+	padding: 0.15em 0.45em;
+	
+	border: 1px solid var(--background-gray-border);
+	border-radius: 2px;
+	
+	cursor: pointer;
+}
+button:not(:hover), input[type=submit]:not(:hover), input[type=reset]:not(:hover), input[type=button]:not(:hover) {
+	background-color: var(--background-gray);
+}
+button:hover:not(:disabled), input[type=submit]:hover:not(:disabled), input[type=reset]:hover:not(:disabled), input[type=button]:hover:not(:disabled) {
+	background-color: var(--background-darkgray);
+}
+button:active:not(:disabled), input[type=submit]:active:not(:disabled), input[type=reset]:active:not(:disabled), input[type=button]:active:not(:disabled) {
+	background-color: var(--accent-light);
+	color: var(--text-light);
+}
+button:disabled, input[type=submit]:disabled, input[type=reset]:disabled, input[type=button]:disabled {
+	color: var(--text-disabled);
+	background-color: var(--background-darkgray);
+	cursor: inherit;
+}
+
+
+/* ============== */
+/* === BLOCKS === */
+/* ============== */
+
+/* === full blocks === */
+code:not(.inline), blockquote {
+	display: block;
+	
+	line-height: 1.4;
+	tab-size: 4;
+	-moz-tab-size: 4;
+	color: var(--text-gray);
+	
+	background-color: var(--background-gray);
+	
+	border: 1px solid var(--background-gray-border);
+	border-left: 4px solid var(--accent);
+	border-radius: 2px;
+	
+	margin: 0.5em 0;
+	padding: 0.25em 14px;
+}
+code:not(.inline) {
+	white-space: pre;
+	overflow: auto;
+	min-height: calc(0.5em * 2 + 1em);
+	max-height: 600px;
+}
+blockquote {
+	white-space: pre-wrap;
+	overflow: hidden;
+}
+
+/* === inline blocks === */
+q, cite, kbd, time, code.inline, var, samp {
+	line-height: 1.4;
+	color: var(--text-gray);
+	
+	background-color: var(--background-gray);
+	
+	border: 1px solid var(--background-gray-border);
+	border-radius: 2px;
+	
+	margin: 0;
+	padding: 0px 3px;
+}
+code.inline { display: inline-block; }
+q, cite, kbd, time, var, samp { display: inline; }
+
+/* === modifier === */
+code *, var *, samp * {	font-family: inherit; font-size: inherit; }
+q, blockquote, cite, kbd, time { font-family: inherit; }
+code, var, samp { font-family: Consolas, monospace; }
+blockquote { font-size: 1em; }
+q, cite, kbd, time { font-size: 0.85em; }
+code, var, samp { font-size: 0.9em; }
+q, blockquote, cite { font-style: italic; }
+q::before, blockquote::before, cite::before { content: "\201E"; }
+q::after, blockquote::after, cite::after { content: "\201F"; }

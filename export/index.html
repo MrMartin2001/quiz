@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="de">
+	<head>
+		<meta charset="UTF-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1">
+		<script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.0.0/crypto-js.min.js"></script>
+		<script src="/quiz/layout/js/language.js"></script>
+		<script>__tr('en', '<title>It\'s quiz time</title>', 'de', '<title>Zeit für ein Quiz</title>')</script>
+		<link rel="icon" type="image/x-icon" href="/quiz/logo.ico">
+		<link rel="shortcut icon" type="image/x-icon" href="/quiz/logo.ico">
+		<link rel="stylesheet" href="/quiz/layout/css/style.css">
+		<link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
+		<style>
+			blockquote::before { content: ''; }
+			blockquote::after { content: ''; }
+			code.incorrect:not(.inline), blockquote.incorrect { border-left-color: var(--bar-incorrect); }
+			code.correct:not(.inline), blockquote.correct { border-left-color: var(--bar-correct); }
+			
+			.big-button {
+				width: 100%;
+				font-size: 1.2em;
+				min-height: 1.6em;
+				
+				border: none;
+				border-radius: 1.6em;
+				
+				background-color: var(--accent);
+				color: var(--text-accent) !important;
+			}
+			.big-button:not(:hover) { background-color: var(--accent) !important; }
+			.big-button:hover, .big-button:active:not(:hover) { background-color: var(--accent-light) !important; }
+			.big-button:active:hover { background-color: var(--bar-correct) !important; }
+			.big-button .material-icons {
+				vertical-align: middle;
+				padding: 0 0.3em;
+				font-size: 1.1em;
+				color: var(--text-accent);
+			}
+		</style>
+	</head>
+	<body>
+		<section>
+			<div class="title">
+				<h1><script>__tr('en', 'Export quiz', 'de', 'Quiz exportieren')</script></h1>
+				<hr>
+				<div class="link"><a></a></div>
+				<script>generateLanguages('de', 'en');</script>
+			</div>
+			<form onsubmit="return false;">
+			</form>
+		</section>
+		
+		<script>
+			
+			const LANGUAGES = {'de': '🇩🇪', 'en': '🇬🇧', 'es': '🇪🇸', 'fr': '🇫🇷', 'it': '🇮🇹'};
+			
+			async function main() {
+				const urlParams = new URLSearchParams(location.search);
+				await loadQuiz(urlParams.get('q'));
+				
+				/*global*/ form = document.querySelector('form');
+				
+				// id
+				var h1 = document.createElement('h1');
+				h1.innerText = _tr('en', 'Quiz ID', 'de', 'Quiz ID');
+				form.appendChild(h1);
+				
+				var input = document.createElement('input');
+				input.type = 'text';
+				input.id = 'quizId';
+				input.placeholder = _tr('en', 'Enter quiz ID...', 'de', 'Quiz ID eingeben...');
+				input.onkeydown = event => event.keyCode != 13;
+				input.onblur = evt => document.location = `?q=${evt.target.value}`;
+				input.oninput = async evt => loadQuiz(evt.target.value);
+				if (QID != null) input.value = QID;
+				form.appendChild(input);
+				
+				// submit
+				var p = document.createElement('p');
+				var button = document.createElement('button');
+				button.id = 'submit';
+				button.innerText = _tr('en', 'Export quiz', 'de', 'Quiz exportieren');
+				button.onclick = () => { exportQuiz(); return false; };
+				button.disabled = QUIZ === undefined;
+				p.appendChild(button);
+				form.appendChild(p);
+				
+				// export
+				if (QUIZ !== undefined) exportQuiz();
+			}
+			main();
+			
+			async function loadQuiz(qid) {
+				/*global*/ QID = qid;
+				
+				/*global*/ QUIZ = await fetch(`../quizzes/${QID}.json`)
+					.then(res => res.json())
+					.catch(err => { return undefined; });
+				
+				var link = document.querySelector('div.link a');
+				link.href = `/quiz?q=${QID}`;
+				link.innerText = `${window.location.origin}/quiz?q=${QID}`;
+				
+				var button = document.querySelector('button#submit');
+				if (button !== null) button.disabled = QUIZ === undefined;
+			}
+			
+			async function exportQuiz() {
+				
+				// Preparation //
+				
+				const section = document.querySelector('section');
+				const form = document.querySelector('form');
+				const button = document.querySelector('button#submit');
+				
+				// get/create resolution
+				var resolution = document.querySelector('#resolution');
+				if (resolution === null) {
+					resolution = document.createElement('div');
+					resolution.id = 'resolution';
+					section.appendChild(resolution);
+				} else {
+					resolution.innerHTML = '';
+				}
+				
+				// disable form elements
+				var formElements = document.querySelectorAll('input:not([disabled]), select, textarea, button');
+				formElements.forEach(elem => elem.disabled = true);
+				
+				// remove children after button
+				var flag = false;
+				form.childNodes.forEach(child => {
+					if (flag) form.removeChild(child);
+					if (child === button.parentElement) flag = true;
+				});
+				
+				// add progress bar and run
+				var progressBar = document.createElement('div');
+				progressBar.classList.add('progress-bar');
+				var bar = document.createElement('div');
+				bar.classList.add('bar');
+				progressBar.appendChild(bar);
+				resolution.appendChild(progressBar);
+				
+				var t = Math.random() * 500 + 300;
+				for (var p = 1; p <= 100; p++) {
+					bar.style.width = `${p}%`;
+					await new Promise(r => setTimeout(r, t / 100));
+				}
+				
+				
+				// Generate //
+				
+				bar.innerText = _tr('en', 'The quiz was exported successfully.', 'de', 'Das Quiz wurde erfolgreich exportiert.');
+				progressBar.classList.add('correct');
+				
+				function createIcon(name) {
+					var icon = document.createElement('span');
+					icon.classList.add('material-icons');
+					icon.innerText = name;
+					return icon;
+				}
+				function ___tr(lang, ...kwargs) {
+					for (let i = 0; i < kwargs.length; i += 2)
+						if (lang == kwargs[i]) return kwargs[i+1];
+					return kwargs[1];
+				}
+				
+				// copy button
+				var p = document.createElement('p');
+				var copy = document.createElement('button');
+				copy.classList.add('big-button');
+				copy.appendChild(createIcon('content_copy'));
+				copy.appendChild(document.createTextNode(_tr('en', 'Copy quiz', 'de', 'Quiz kopieren')));
+				copy.appendChild(createIcon('content_copy'));
+				copy.onclick = () => {
+					window.getSelection().removeAllRanges();
+					quote.childNodes.forEach(child => {
+						var range = document.createRange();
+						range.selectNode(child);
+						window.getSelection().addRange(range);
+					});
+					document.execCommand('copy');
+					return false;
+				};
+				p.appendChild(copy);
+				resolution.appendChild(p);
+				
+				// quote with text
+				var quote = document.createElement('blockquote');
+				function collectQuiz() {
+					var quiz = new Array();
+					Object.keys(QUIZ['title']).forEach(lang => {
+						var h2 = QUIZ['title'][lang];
+						if ('subtitle' in QUIZ) h2 += ' – ' + QUIZ['subtitle'][lang];
+						quiz.push(`<h2>${h2}<\/h2>`);
+						var url = `${window.location.origin}/quiz?q=${QID}`;
+						quiz.push('<h4>' + ___tr(lang, 'en', 'To the quiz', 'de', 'Zum Quiz') + `: <code class="inline"><a href="${url}">${url}<\/a><\/code>` + '</h4>');
+						quiz.push(`<i>${QUIZ.description[lang]}<\/i>`);
+						QUIZ['questions'].forEach((question, i) => {
+							quiz.push('<h3>' + ___tr(lang, 'en', `Question ${i+1}`, 'de', `Frage ${i+1}`) + '<\/h3>');
+							if ('d' in question) quiz.push(question['d'][lang]);
+							quiz.push(`<b>${question.q[lang]}<\/b>`);
+						});
+						quiz.push('');
+					});
+					quiz = quiz.splice(0, quiz.length-1);
+					return quiz;
+				}
+				quote.innerHTML = collectQuiz().map(line => line.startsWith('<h') ? line : line + '<br>').join('');
+				resolution.appendChild(quote);
+				
+				// enable form elements
+				bar.classList.add('anti-bar');
+				formElements.forEach(elem => elem.disabled = false);
+			}
+		</script>
+		
+		<script src="/quiz/layout/js/code.js" async></script>
+	</body>
+</html>
